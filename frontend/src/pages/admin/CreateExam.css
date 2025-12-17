@@ -1,0 +1,125 @@
+/* Page */
+.exam-page {
+  min-height: 100vh;
+  background: #f5f7fb;
+  display: flex;
+  justify-content: center;
+  padding: 2rem;
+  font-family: "Inter", sans-serif;
+}
+
+/* Card */
+.exam-card {
+  width: 100%;
+  max-width: 900px;
+  background: #ffffff;
+  padding: 2rem;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+/* Headings */
+.exam-card h1 {
+  text-align: center;
+  margin-bottom: 0.3rem;
+}
+
+.subtitle {
+  text-align: center;
+  color: #6b7280;
+  margin-bottom: 2rem;
+}
+
+/* Sections */
+.section {
+  margin-bottom: 2rem;
+}
+
+.section h3 {
+  margin-bottom: 1rem;
+  color: #374151;
+}
+
+/* Inputs */
+input {
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  border: 1px solid #d1d5db;
+  outline: none;
+  transition: 0.2s;
+}
+
+input:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+}
+
+.full-input {
+  width: 100%;
+}
+
+/* Grid */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+/* Subject Box */
+.subject-box {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1.2rem;
+  background: #fafafa;
+}
+
+/* Roll section */
+.roll-section {
+  margin: 1rem 0;
+}
+
+.roll-row {
+  display: flex;
+  gap: 0.6rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Buttons */
+.primary-btn {
+  width: 100%;
+  padding: 0.9rem;
+  border-radius: 12px;
+  background: #6366f1;
+  color: #fff;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+}
+
+.primary-btn:hover {
+  background: #4f46e5;
+}
+
+.secondary-btn {
+  padding: 0.7rem 1.2rem;
+  border-radius: 10px;
+  background: #e0e7ff;
+  color: #3730a3;
+  border: none;
+  cursor: pointer;
+}
+
+.secondary-btn:hover {
+  background: #c7d2fe;
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  color: #6366f1;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0;
+  margin-top: 0.3rem;
+}

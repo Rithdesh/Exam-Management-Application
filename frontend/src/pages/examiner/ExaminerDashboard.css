@@ -1,0 +1,106 @@
+.examiner-wrapper {
+  min-height: 100vh;
+  background: #f0f4f8;
+  display: flex;
+  justify-content: center;
+  padding: 40px 0;
+}
+
+.examiner-container {
+  background: white;
+  width: 95%;
+  max-width: 1100px;
+  padding: 2.5rem;
+  border-radius: 18px;
+  box-shadow: 0 25px 45px rgba(0, 0, 0, 0.2);
+}
+
+h1 {
+  color: #4f46e5;
+  text-align: center;
+}
+
+.subtitle {
+  text-align: center;
+  color: #6b7280;
+  margin-bottom: 2rem;
+}
+
+.exam-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.exam-card {
+  background: #f9fafb;
+  padding: 1.6rem;
+  border-radius: 14px;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.12);
+  transition: transform 0.3s;
+}
+
+.exam-card:hover {
+  transform: translateY(-6px);
+}
+
+.exam-card h3 {
+  margin-bottom: 1rem;
+}
+
+.btn-group {
+  display: flex;
+  gap: 10px;
+}
+
+button {
+  background: #7c3aed;
+  color: white;
+  border: none;
+  padding: 0.6rem 1.3rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+button:hover {
+  background: #5b21b6;
+}
+
+button.outline {
+  background: transparent;
+  color: #7c3aed;
+  border: 2px solid #7c3aed;
+}
+
+button.outline:hover {
+  background: #7c3aed;
+  color: white;
+}
+
+.seating-section {
+  margin-top: 3rem;
+}
+
+.hall-card {
+  background: #eef2ff;
+  padding: 1.4rem;
+  border-radius: 14px;
+  margin-top: 1.2rem;
+}
+
+.hall-card h4 span {
+  color: #6b7280;
+  font-weight: normal;
+}
+
+.allocation-block {
+  margin-left: 1rem;
+  margin-top: 0.5rem;
+}
+
+.allocation-block ul {
+  margin-top: 0.4rem;
+  padding-left: 1.2rem;
+}

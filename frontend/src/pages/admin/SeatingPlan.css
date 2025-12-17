@@ -1,0 +1,100 @@
+.seating-container {
+  min-height: 100vh;
+  padding: 2rem;
+  background-color: #f9fafb;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+h2 {
+  text-align: center;
+  font-size: 2rem;
+  color: #111827;
+  margin-bottom: 2rem;
+}
+
+.loading {
+  text-align: center;
+  font-size: 1.2rem;
+  color: #6b7280;
+}
+
+/* Grid of classrooms */
+.classrooms-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+/* Individual classroom card */
+.classroom-card {
+  background-color: #fff;
+  padding: 1rem;
+  border-radius: 0.8rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.classroom-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+}
+
+.classroom-card h3 {
+  font-size: 1.2rem;
+  color: #7c3aed;
+  margin-bottom: 0.5rem;
+}
+
+.allocations-list p {
+  font-size: 0.9rem;
+  color: #374151;
+  margin: 0.2rem 0;
+}
+
+.subject-name {
+  font-weight: 600;
+}
+
+.count {
+  color: #6b7280;
+}
+
+/* Download button */
+.download-btn {
+  margin-top: 2rem;
+  display: block;
+  padding: 0.6rem 1.2rem;
+  background-color: #7c3aed;
+  color: #fff;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.download-btn:hover {
+  background-color: #5b21b6;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .classrooms-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .classroom-card h3 {
+    font-size: 1.1rem;
+  }
+
+  .allocations-list p {
+    font-size: 0.85rem;
+  }
+
+  .download-btn {
+    width: 100%;
+    font-size: 0.95rem;
+    padding: 0.5rem 1rem;
+  }
+}
