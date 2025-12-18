@@ -73,60 +73,69 @@ exports.exportSeatingPlanPDF = async (req, res) => {
     doc.moveTo(40, y).lineTo(550, y).stroke();
     y += 8;
 
-    /* ---------- TABLE BODY ---------- */
-    let sno = 1;
+    /* =====================================================
+       BUILD MERGED ROWS (Hall + Subject)
+    ===================================================== */
+    const rowsMap = {};
     let totalStudents = 0;
 
     seatingPlan.classrooms.forEach((room) => {
-      const hallName = room.hall?.hallName || "N/A";
+      const hallName = room.hall?.hallName || room.hallName || "N/A";
 
       room.allocations.forEach((alloc) => {
-        /* Roll ranges */
+        const key = `${hallName}__${alloc.subjectName}`;
+
+        if (!rowsMap[key]) {
+          rowsMap[key] = {
+            hall: hallName,
+            subject: alloc.subjectName,
+            ranges: [],
+            count: 0,
+          };
+        }
+
         alloc.rollRanges.forEach((range) => {
-          const count =
-            range.to >= range.from ? range.to - range.from + 1 : 1;
+          const from = Number(range.from);
+          const to = Number(range.to);
 
-          const rangeText =
-            range.from === range.to
-              ? `${range.from}`
-              : `${range.from} - ${range.to}`;
+          if (!isNaN(from) && !isNaN(to)) {
+            rowsMap[key].ranges.push(
+              from === to ? `${from}` : `${from} - ${to}`
+            );
+            rowsMap[key].count += to - from + 1;
+          }
+        });
+      });
+    });
 
-          doc
-            .fontSize(10)
-            .text(sno.toString(), col.sno, y)
-            .text(hallName, col.hall, y)
-            .text(alloc.subjectName, col.subject, y)
-            .text(rangeText, col.register, y)
-            .text(count.toString(), col.count, y, {
-              width: 50,
-              align: "right",
-            });
+    /* ---------- TABLE BODY ---------- */
+    let sno = 1;
 
-          y += 15;
-          sno++;
-          totalStudents += count;
+    Object.values(rowsMap).forEach((row) => {
+      const registerText = row.ranges.join(", ");
+
+      doc
+        .fontSize(10)
+        .text(sno.toString(), col.sno, y)
+        .text(row.hall, col.hall, y)
+        .text(row.subject, col.subject, y)
+        .text(registerText, col.register, y, {
+          width: 160,
+        })
+        .text(row.count.toString(), col.count, y, {
+          width: 50,
+          align: "right",
         });
 
-        /* Individual rolls */
-        if (Array.isArray(alloc.individualRolls)) {
-          alloc.individualRolls.forEach((roll) => {
-            doc
-              .fontSize(10)
-              .text(sno.toString(), col.sno, y)
-              .text(hallName, col.hall, y)
-              .text(alloc.subjectName, col.subject, y)
-              .text(roll.toString(), col.register, y)
-              .text("1", col.count, y, {
-                width: 50,
-                align: "right",
-              });
+      y += 18;
+      sno++;
+      totalStudents += row.count;
 
-            y += 15;
-            sno++;
-            totalStudents += 1;
-          });
-        }
-      });
+      /* Page break safety */
+      if (y > 750) {
+        doc.addPage();
+        y = 50;
+      }
     });
 
     /* ---------- FOOTER ---------- */
@@ -144,6 +153,7 @@ exports.exportSeatingPlanPDF = async (req, res) => {
     doc.text("CONTROLLER OF EXAMINATIONS", { align: "right" });
 
     doc.end();
+
   } catch (error) {
     console.error("PDF generation error:", error);
     res.status(500).json({

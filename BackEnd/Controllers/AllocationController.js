@@ -5,6 +5,7 @@ const SeatingPlan = require("../Models/SeatingPlan");
 /* -------------------------------------------------------
    Expand roll ranges + individual rolls → sorted list
 ------------------------------------------------------- */
+
 function normalizeRolls({ rollRanges = [], individualRolls = [] }) {
   const rolls = [];
 
@@ -239,59 +240,70 @@ exports.getSeatingPlanByExam = async (req, res) => {
 
 exports.getSeatingByRollNumber = async (req, res) => {
   try {
+    console.log("🔥 HIT getSeatingByRollNumber");
+    console.log("➡️ req.params:", req.params);
+
     const { examId, rollNumber } = req.params;
     const roll = Number(rollNumber);
 
     if (isNaN(roll)) {
       return res.status(400).json({
-        message: "Invalid roll number"
+        success: false,
+        message: "Invalid roll number",
       });
     }
 
-    /* ---------- Fetch seating plan ---------- */
+    /* ---------- examId is SeatingPlan _id ---------- */
     const seatingPlan = await SeatingPlan
-      .findOne({ examination: examId })
+      .findById(examId)
       .populate("classrooms.hall", "hallName capacity");
+
+    console.log("🪑 seatingPlan found:", !!seatingPlan);
 
     if (!seatingPlan) {
       return res.status(404).json({
-        message: "Seating plan not found for this examination"
+        success: false,
+        message: "No seating plan found for the specified examination",
       });
     }
 
-    /* ---------- Search roll in ranges ---------- */
+    /* ---------- Traverse classrooms → allocations → rollRanges ---------- */
     for (const classroom of seatingPlan.classrooms) {
       for (const allocation of classroom.allocations) {
         for (const range of allocation.rollRanges) {
-          if (roll >= range.from && roll <= range.to) {
+          const from = Number(range.from);
+          const to = Number(range.to);
+
+          console.log({ roll, from, to });
+
+          if (roll >= from && roll <= to) {
             return res.status(200).json({
+              success: true,
               message: "Student seating found",
               seatingDetails: {
                 rollNumber: roll,
                 subject: allocation.subjectName,
-                hall: classroom.hall.hallName,
-                hallCapacity: classroom.hall.capacity,
-                rollRange: {
-                  from: range.from,
-                  to: range.to
-                }
-              }
+                hall: classroom.hallName,
+                hallCapacity: classroom.capacityAtAllocation,
+                rollRange: { from, to },
+              },
             });
           }
         }
       }
     }
 
-    /* ---------- Not found ---------- */
     return res.status(404).json({
-      message: "No seating allocation found for the given roll number"
+      success: false,
+      message: "No seating allocation found for the given roll number",
     });
 
   } catch (error) {
-    console.error("Roll lookup error:", error);
-    res.status(500).json({
+    console.error("💥 Roll lookup error:", error);
+    return res.status(500).json({
+      success: false,
       message: "Failed to fetch seating details",
-      error: error.message
+      error: error.message,
     });
   }
 };

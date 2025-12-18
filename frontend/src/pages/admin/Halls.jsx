@@ -4,10 +4,6 @@ import { Plus, Trash2, Building2, Users, AlertCircle, X } from "lucide-react";
 import { toast } from "react-toastify";
 
 
-  console.log("ENV base URL:", process.env.REACT_APP_API_URL);
-  console.log("Axios base URL:", API.defaults.baseURL);
-
-
 export default function Halls() {
   const [hallName, setHallName] = useState("");
   const [capacity, setCapacity] = useState("");

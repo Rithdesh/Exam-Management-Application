@@ -18,36 +18,34 @@ export default function StudentDashboard() {
       .catch(() => toast.error("Unable to load exams"));
   }, []);
 
-  const findSeat = async (examId) => {
-    if (!rollNo) {
-      toast.warning("Please enter your Roll Number");
-      return;
-    }
+ const findSeat = async (examId) => {
+   if (!rollNo || isNaN(Number(rollNo))) {
+     toast.warning("Please enter a valid Roll Number");
+     return;
+   }
 
-    try {
-      setLoading(true);
-      setResult(null);
+   const roll = Number(rollNo); // 👈 convert HERE
 
-      const res = await API.get(
-        `/SeatingPlan/${examId}/roll/${rollNo}`
-      );
+   try {
+     setLoading(true);
+     setResult(null);
 
-      console.log(res.data);
+     const res = await API.get(`/SeatingPlan/${examId}/roll/${roll}`);
 
-      if (!res.data?.seatingDetails) {
-        toast.info("Seat not allocated yet. Please check later.");
-        return;
-      }
+     if (!res.data?.seatingDetails) {
+       toast.info("Seat not allocated yet. Please check later.");
+       return;
+     }
 
-      setResult(res.data.seatingDetails);
-      setShowModal(true);
-    } catch (error) {
-      console.error(error);
-      toast.info("Seat not allocated yet. Please check later.");
-    } finally {
-      setLoading(false);
-    }
-  };
+     setResult(res.data.seatingDetails);
+     setShowModal(true);
+   } catch {
+     toast.info("Seat not allocated yet. Please check later.");
+   } finally {
+     setLoading(false);
+   }
+ };
+
 
   return (
     <DashboardLayout>
@@ -85,10 +83,12 @@ export default function StudentDashboard() {
 
               <div className="relative">
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   placeholder="Enter your roll number"
                   value={rollNo}
-                  onChange={(e) => setRollNo(Number(e.target.value))}
+                  onChange={(e) => setRollNo(e.target.value)}
                   className="w-full rounded-xl border-2 border-gray-200 px-5 py-4 text-lg focus:outline-none focus:border-indigo-500 focus:bg-white bg-gray-50 transition-all duration-200 text-gray-800 placeholder-gray-400"
                 />
                 <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
