@@ -14,10 +14,6 @@ const {
   getSeatingPlanByExam,
 } = require("../Controllers/AllocationController");
 
-const {
-  exportSeatingPlanPDF,
-} = require("../Controllers/PdfController");
-
 // Middleware
 const {
   authenticateJWT,
@@ -34,11 +30,10 @@ router.post(
   createExamination
 );
 
-// Admin, student, and examiner can view all exams
+// Admin, student,  can view all exams
 router.get(
   "/getall",
   authenticateJWT,
-  authorizeRoles("admin", "student", "examiner"),
   getAllExaminations
 );
 
@@ -68,22 +63,18 @@ router.post(
   allocateSeating
 );
 
-// Admin, student, and examiner can view seating plans
+// Admin, student, and  can view seating plans
 router.get(
   "/seatingplan/:id",
   authenticateJWT,
-  authorizeRoles("admin", "student", "examiner"),
   getSeatingPlanByExam
 );
 
+
+
 // -------------------- Export PDF --------------------
 
-// Admin and examiner can export PDFs
-router.get(
-  "/exportpdf/:id",
-  authenticateJWT,
-  authorizeRoles("admin", "examiner"),
-  exportSeatingPlanPDF
-);
+// Admin and  can export PDFs
+
 
 module.exports = router;

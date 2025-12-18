@@ -16,7 +16,7 @@ const userSchema = new mongoose.Schema({
   },
   roles: {
     type: [String],
-    enum: ['STUDENT', 'ADMIN', 'EXAMINER'],
+    enum: ['STUDENT', 'ADMIN'],
     default: ['STUDENT'], 
     set: roles => roles.map(r => r.toUpperCase())
   }

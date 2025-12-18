@@ -46,7 +46,7 @@ function rollsToRanges(rolls) {
 }
 
 /* -------------------------------------------------------
-   CREATE SEATING ALLOCATION
+   CREATE SEATING ALLOCATION (DUPLICATE SAFE)
 ------------------------------------------------------- */
 exports.allocateSeating = async (req, res) => {
   try {
@@ -56,6 +56,15 @@ exports.allocateSeating = async (req, res) => {
     const exam = await Examination.findById(examId);
     if (!exam) {
       return res.status(404).json({ message: "Examination not found" });
+    }
+
+    /* ---------- DUPLICATE ALLOCATION CHECK ---------- */
+    const existingPlan = await SeatingPlan.findOne({ examination: examId });
+    if (existingPlan) {
+      return res.status(409).json({
+        message: "Seating allocation already exists for this examination",
+        seatingPlanId: existingPlan._id
+      });
     }
 
     /* ---------- Fetch halls ---------- */
@@ -74,7 +83,7 @@ exports.allocateSeating = async (req, res) => {
       };
     });
 
-    /* ---------- Total students (BEFORE allocation) ---------- */
+    /* ---------- Total students ---------- */
     const totalStudents = subjects.reduce(
       (sum, s) => sum + s.remaining,
       0
@@ -85,16 +94,15 @@ exports.allocateSeating = async (req, res) => {
     const overflowDetails = [];
 
     /* ===================================================
-       CASE 1: SINGLE SUBJECT → SPLIT INTO TWO HALLS
+       CASE 1: SINGLE SUBJECT
     =================================================== */
     if (subjects.length === 1) {
       const subject = subjects[0];
 
-      if (halls.length === 1) {
-        // ⚠️ Only one hall available
-        const hall = halls[0];
-        const take = Math.min(hall.capacity, subject.remaining);
+      for (const hall of halls) {
+        if (subject.remaining <= 0) break;
 
+        const take = Math.min(hall.capacity, subject.remaining);
         const rolls = subject.queue.splice(0, take);
         subject.remaining -= rolls.length;
 
@@ -109,55 +117,10 @@ exports.allocateSeating = async (req, res) => {
             rollRanges: rollsToRanges(rolls)
           }]
         });
-
-        hasOverflow = subject.remaining > 0;
-        overflowDetails.push(
-          "Single-subject exam allocated to one hall – malpractice risk"
-        );
-
-      } else {
-        // ✅ Split into two halls
-        const hallA = halls[0];
-        const hallB = halls[1];
-
-        const half = Math.ceil(subject.remaining / 2);
-
-        const aCount = Math.min(half, hallA.capacity);
-        const bCount = Math.min(subject.remaining - aCount, hallB.capacity);
-
-        const aRolls = subject.queue.splice(0, aCount);
-        const bRolls = subject.queue.splice(0, bCount);
-
-        subject.remaining -= (aRolls.length + bRolls.length);
-
-        classrooms.push(
-          {
-            hall: hallA._id,
-            capacityAtAllocation: hallA.capacity,
-            studentsInHall: aRolls.length,
-            notFull: aRolls.length < hallA.capacity,
-            allocations: [{
-              subjectName: subject.subjectName,
-              count: aRolls.length,
-              rollRanges: rollsToRanges(aRolls)
-            }]
-          },
-          {
-            hall: hallB._id,
-            capacityAtAllocation: hallB.capacity,
-            studentsInHall: bRolls.length,
-            notFull: bRolls.length < hallB.capacity,
-            allocations: [{
-              subjectName: subject.subjectName,
-              count: bRolls.length,
-              rollRanges: rollsToRanges(bRolls)
-            }]
-          }
-        );
       }
 
     /* ===================================================
-       CASE 2: MULTI-SUBJECT → 2–3 SUBJECT MIX
+       CASE 2: MULTI-SUBJECT MIX
     =================================================== */
     } else {
       for (const hall of halls) {
@@ -169,7 +132,6 @@ exports.allocateSeating = async (req, res) => {
 
         const base = Math.floor(hall.capacity / mixCount);
         let seatsLeft = hall.capacity;
-
         const alloc = [];
 
         for (const subj of selected) {
@@ -215,7 +177,7 @@ exports.allocateSeating = async (req, res) => {
       }
     }
 
-    /* ---------- Overflow ---------- */
+    /* ---------- Overflow handling ---------- */
     subjects.forEach(s => {
       if (s.remaining > 0) {
         hasOverflow = true;
@@ -225,9 +187,7 @@ exports.allocateSeating = async (req, res) => {
       }
     });
 
-    /* ---------- Save seating plan ----------
-       hallName will be auto-filled by schema middleware
-    --------------------------------------- */
+    /* ---------- Save seating plan ---------- */
     const seatingPlan = await SeatingPlan.create({
       examination: examId,
       classrooms,
@@ -237,21 +197,21 @@ exports.allocateSeating = async (req, res) => {
     });
 
     res.status(201).json({
-      message: "Malpractice-safe seating allocation completed",
+      message: "Seating allocation completed successfully",
       seatingPlan
     });
 
   } catch (error) {
     console.error("Allocation error:", error);
     res.status(500).json({
-      message: "Allocation failed",
+      message: "Allocation fail",
       error: error.message
     });
   }
 };
 
 /* -------------------------------------------------------
-   FETCH SEATING PLAN
+   FETCH SEATING PLAN BY EXAM
 ------------------------------------------------------- */
 exports.getSeatingPlanByExam = async (req, res) => {
   try {
@@ -259,7 +219,6 @@ exports.getSeatingPlanByExam = async (req, res) => {
 
     const seatingPlan = await SeatingPlan
       .findOne({ examination: id })
-      .sort({ createdAt: -1 })
       .populate("classrooms.hall", "hallName capacity");
 
     if (!seatingPlan) {
@@ -277,3 +236,65 @@ exports.getSeatingPlanByExam = async (req, res) => {
     });
   }
 };
+
+exports.getSeatingByRollNumber = async (req, res) => {
+  try {
+    const { examId, rollNumber } = req.params;
+    const roll = Number(rollNumber);
+
+    if (isNaN(roll)) {
+      return res.status(400).json({
+        message: "Invalid roll number"
+      });
+    }
+
+    /* ---------- Fetch seating plan ---------- */
+    const seatingPlan = await SeatingPlan
+      .findOne({ examination: examId })
+      .populate("classrooms.hall", "hallName capacity");
+
+    if (!seatingPlan) {
+      return res.status(404).json({
+        message: "Seating plan not found for this examination"
+      });
+    }
+
+    /* ---------- Search roll in ranges ---------- */
+    for (const classroom of seatingPlan.classrooms) {
+      for (const allocation of classroom.allocations) {
+        for (const range of allocation.rollRanges) {
+          if (roll >= range.from && roll <= range.to) {
+            return res.status(200).json({
+              message: "Student seating found",
+              seatingDetails: {
+                rollNumber: roll,
+                subject: allocation.subjectName,
+                hall: classroom.hall.hallName,
+                hallCapacity: classroom.hall.capacity,
+                rollRange: {
+                  from: range.from,
+                  to: range.to
+                }
+              }
+            });
+          }
+        }
+      }
+    }
+
+    /* ---------- Not found ---------- */
+    return res.status(404).json({
+      message: "No seating allocation found for the given roll number"
+    });
+
+  } catch (error) {
+    console.error("Roll lookup error:", error);
+    res.status(500).json({
+      message: "Failed to fetch seating details",
+      error: error.message
+    });
+  }
+};
+
+
+
