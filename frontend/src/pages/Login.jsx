@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { AlertCircle,Mail,Lock } from "lucide-react";
+import { AlertCircle, Mail, Lock } from "lucide-react";
 
 function Login() {
   const navigate = useNavigate();
@@ -8,7 +8,6 @@ function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -20,10 +19,7 @@ function Login() {
     }
 
     try {
-      setLoading(true);
-
-      // 🔁 Replace URL with your backend endpoint
-      const res = await fetch("http://localhost:8000/users/login", {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/users/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -35,11 +31,8 @@ function Login() {
 
       if (!res.ok) {
         setError(data.message || "Invalid credentials");
-        setLoading(false);
         return;
       }
-
-     
 
       // 🔐 Store auth data
       localStorage.setItem("token", data.token);
@@ -54,8 +47,6 @@ function Login() {
       else navigate("/");
     } catch (err) {
       setError("Something went wrong. Please try again.");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -92,7 +83,7 @@ function Login() {
                 placeholder="Enter your email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-11 pr-4 py-3 bg-white/70 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                className="w-full pl-11 pr-4 py-3 bg-white/70 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
               />
             </div>
           </div>
@@ -109,8 +100,8 @@ function Login() {
                 placeholder="Enter your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                onKeyPress={(e) => e.key === "Enter" && handleLogin()}
-                className="w-full pl-11 pr-4 py-3 bg-white/70 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                onKeyDown={(e) => e.key === "Enter" && handleLogin(e)}
+                className="w-full pl-11 pr-4 py-3 bg-white/70 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
               />
             </div>
           </div>
@@ -128,7 +119,7 @@ function Login() {
             New user?{" "}
             <a
               href="/register"
-              className="text-indigo-600 font-semibold hover:text-indigo-700 cursor-pointer transition-colors"
+              className="text-indigo-600 font-semibold hover:text-indigo-700 transition-colors"
             >
               Register
             </a>

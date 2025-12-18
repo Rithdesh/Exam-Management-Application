@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import DashboardLayout from "../components/DashboardLayout";
 function Home() {
   const navigate = useNavigate();

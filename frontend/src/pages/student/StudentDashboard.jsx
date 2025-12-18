@@ -331,19 +331,3 @@ export default function StudentDashboard() {
     </DashboardLayout>
   );
 }
-
-function Info({ label, value, icon }) {
-  return (
-    <div className="flex items-center gap-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl p-5">
-      {icon && (
-        <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md text-white">
-          {icon}
-        </div>
-      )}
-      <div>
-        <p className="text-sm text-gray-500 font-medium mb-1">{label}</p>
-        <p className="text-xl font-bold text-gray-800">{value}</p>
-      </div>
-    </div>
-  );
-}
