@@ -7,10 +7,6 @@ const dotenv = require('dotenv');
 const mongoose = require('mongoose');
 dotenv.config();
 
-const allowedOrigins = [
-  "http://localhost:3000",                 // local dev      // prod frontend
-  "https://examination-management-application.netlify.app/"       // if you use Netlify
-];
 //ROUTES
 const UserRoutes = require('./Routes/UserRoutes');
 const ExaminationRoutes = require('./Routes/ExaminationRoutes');
@@ -22,6 +18,10 @@ const SeatingPlanRoutes = require('./Routes/SeatingPlanRoutes')
 const app = express();
 const PORT = process.env.PORT;
 
+const allowedOrigins = [
+  "http://localhost:3000",                 // local dev      // prod frontend
+  "https://examination-management-application.netlify.app/"       // if you use Netlify
+];
 app.use(
   cors({
     origin: function (origin, callback) {
@@ -39,6 +39,8 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+
+app.options("*", cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
