@@ -8,9 +8,8 @@ const mongoose = require('mongoose');
 dotenv.config();
 
 const allowedOrigins = [
-  "http://localhost:3000",                 // local dev
-  "https://exam-frontend.vercel.app",       // prod frontend
-  "https://exam-frontend.netlify.app"       // if you use Netlify
+  "http://localhost:3000",                 // local dev      // prod frontend
+  "https://examination-management-application.netlify.app/"       // if you use Netlify
 ];
 //ROUTES
 const UserRoutes = require('./Routes/UserRoutes');
