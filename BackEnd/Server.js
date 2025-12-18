@@ -1,3 +1,5 @@
+const CORS = require('cors')
+
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
@@ -5,6 +7,11 @@ const dotenv = require('dotenv');
 const mongoose = require('mongoose');
 dotenv.config();
 
+const allowedOrigins = [
+  "http://localhost:8000",                 // local dev
+  "https://exam-frontend.vercel.app",       // prod frontend
+  "https://exam-frontend.netlify.app"       // if you use Netlify
+];
 //ROUTES
 const UserRoutes = require('./Routes/UserRoutes');
 const ExaminationRoutes = require('./Routes/ExaminationRoutes');
@@ -16,7 +23,23 @@ const SeatingPlanRoutes = require('./Routes/SeatingPlanRoutes')
 const app = express();
 const PORT = process.env.PORT;
 
-app.use(cors());
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // allow requests with no origin (Postman, curl, server-to-server)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS 😤"));
+      }
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
@@ -41,4 +64,8 @@ app.use('/SeatingPlan',SeatingPlanRoutes);
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
+});
+
+app.get("/api/health", (req, res) => {
+  res.status(200).json({ status: "Backend is alive 🫀" });
 });
