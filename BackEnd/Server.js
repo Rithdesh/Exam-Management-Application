@@ -8,7 +8,7 @@ const mongoose = require('mongoose');
 dotenv.config();
 
 const allowedOrigins = [
-  "http://localhost:8000",                 // local dev
+  "http://localhost:3000",                 // local dev
   "https://exam-frontend.vercel.app",       // prod frontend
   "https://exam-frontend.netlify.app"       // if you use Netlify
 ];

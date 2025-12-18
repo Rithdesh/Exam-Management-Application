@@ -14,7 +14,7 @@ export default function SeatingPlan() {
 
   const fetchPlans = async () => {
     try {
-      const res = await API.get("http://localhost:8000/SeatingPlan/getall");
+      const res = await API.get(`/SeatingPlan/getall`);
       setPlans(res.data.seatingPlans || []);
     } catch (err) {
       toast.error("Failed to load seating plans");
@@ -45,7 +45,7 @@ export default function SeatingPlan() {
 
     try {
       await API.delete(
-        `http://localhost:8000/SeatingPlan/delete/${selectedPlan._id}`
+        `/SeatingPlan/delete/${selectedPlan._id}`
       );
       toast.success("Seating plan deleted successfully");
       closeDeleteModal();
@@ -60,7 +60,7 @@ export default function SeatingPlan() {
   const downloadPDF = async (id, examName) => {
     try {
       const res = await API.get(
-        `http://localhost:8000/SeatingPlan/exportpdf/${id}`,
+        `/SeatingPlan/exportpdf/${id}`,
         { responseType: "blob" }
       );
 

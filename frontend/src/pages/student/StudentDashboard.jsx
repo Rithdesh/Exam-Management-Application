@@ -29,7 +29,7 @@ export default function StudentDashboard() {
       setResult(null);
 
       const res = await API.get(
-        `http://localhost:8000/SeatingPlan/${examId}/roll/${rollNo}`
+        `/SeatingPlan/${examId}/roll/${rollNo}`
       );
 
       console.log(res.data);
