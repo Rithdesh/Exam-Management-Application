@@ -20,7 +20,7 @@ const PORT = process.env.PORT;
 
 const allowedOrigins = [
   "http://localhost:3000",                 // local dev      // prod frontend
-  "https://examination-management-application.netlify.app/"       // if you use Netlify
+  "https://examination-management-application.netlify.app"       // if you use Netlify
 ];
 app.use(
   cors({
