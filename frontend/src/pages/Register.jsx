@@ -1,15 +1,6 @@
 import { useState } from "react";
+import API from "../api/api";
 import { FiUser, FiMail, FiLock, FiUserCheck } from "react-icons/fi";
-
-// Mock API for demonstration
-const API = {
-  post: async (url, data) => {
-    console.log("Register:", data);
-    return new Promise((resolve) => {
-      setTimeout(() => resolve({ data: { success: true } }), 1000);
-    });
-  },
-};
 
 const Register = () => {
   const [name, setName] = useState("");
@@ -34,7 +25,7 @@ const Register = () => {
       });
 
       alert("Registration successful. Please login.");
-      // window.location.href = "/";
+      window.location.href = "/";
     } catch (err) {
       alert("Registration failed");
     } finally {
