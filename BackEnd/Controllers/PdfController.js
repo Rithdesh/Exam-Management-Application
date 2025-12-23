@@ -1,55 +1,101 @@
 const PDFDocument = require("pdfkit");
 const SeatingPlan = require("../Models/SeatingPlan");
 
+/* =====================================================
+   HARD SANITIZER (ASCII-ONLY, HEADER SAFE)
+===================================================== */
+const sanitizeFileName = (name = "SeatingPlan") => {
+  return name
+    .normalize("NFKD")                 // remove unicode
+    .replace(/[^\x00-\x7F]/g, "")      // strip non-ASCII
+    .replace(/[^a-zA-Z0-9._-]/g, "_")  // safe chars only
+    .replace(/_+/g, "_")
+    .trim();
+};
+
 exports.exportSeatingPlanPDF = async (req, res) => {
   try {
     const { id } = req.params;
 
+    /* ---------- BASIC VALIDATION ---------- */
     if (!id) {
-      return res.status(400).json({ message: "Seating plan ID is required" });
+      return res.status(400).json({
+        success: false,
+        message: "Seating plan ID is required",
+      });
     }
 
+    /* ---------- FETCH DATA ---------- */
     const seatingPlan = await SeatingPlan.findById(id)
       .populate("examination", "examName date")
       .populate("classrooms.hall", "hallName capacity");
 
     if (!seatingPlan) {
-      return res.status(404).json({ message: "Seating plan not found" });
+      return res.status(404).json({
+        success: false,
+        message: "Seating plan not found",
+      });
+    }
+
+    if (!seatingPlan.examination) {
+      return res.status(400).json({
+        success: false,
+        message: "Examination not linked with this seating plan",
+      });
     }
 
     const exam = seatingPlan.examination;
+   const rawName = sanitizeFileName(exam.examName);
 
-    /* ---------- RESPONSE HEADERS ---------- */
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader(
-      "Content-Disposition",
-      `inline; filename=SeatingPlan_${exam.examName.replace(/\s+/g, "_")}.pdf`
-    );
+// fallback if name becomes empty after sanitization
+const finalName =
+  rawName && rawName.length > 0
+    ? `SeatingPlan_${rawName}.pdf`
+    : `SeatingPlan.pdf`;
+
+res.setHeader("Content-Type", "application/pdf");
+res.setHeader(
+  "Content-Disposition",
+  `attachment; filename=${finalName}`
+);
+res.setHeader(
+  "Access-Control-Expose-Headers",
+  "Content-Disposition"
+);
+
 
     const doc = new PDFDocument({ size: "A4", margin: 40 });
     doc.pipe(res);
 
-    /* ---------- HEADER ---------- */
+    /* =====================================================
+       PDF HEADER
+    ===================================================== */
     doc
       .fontSize(14)
-      .text("OFFICE OF THE CONTROLLER OF EXAMINATIONS", { align: "center" });
+      .text("OFFICE OF THE CONTROLLER OF EXAMINATIONS", {
+        align: "center",
+      });
     doc.moveDown(0.5);
 
     doc
       .fontSize(12)
-      .text("Sri Eshwar College of Engineering", { align: "center" });
+      .text("Sri Eshwar College of Engineering", {
+        align: "center",
+      });
     doc.moveDown();
 
     doc
       .fontSize(11)
       .text(
-        `${exam.examName} – ${new Date(exam.date).toDateString()}`,
+        `${exam.examName} - ${new Date(exam.date).toDateString()}`,
         { align: "center" }
       );
 
     doc.moveDown(1.5);
 
-    /* ---------- TABLE COLUMN POSITIONS ---------- */
+    /* =====================================================
+       TABLE LAYOUT
+    ===================================================== */
     const col = {
       sno: 40,
       hall: 80,
@@ -60,7 +106,6 @@ exports.exportSeatingPlanPDF = async (req, res) => {
 
     let y = doc.y;
 
-    /* ---------- TABLE HEADER ---------- */
     doc
       .fontSize(10)
       .text("S.No", col.sno, y)
@@ -74,71 +119,87 @@ exports.exportSeatingPlanPDF = async (req, res) => {
     y += 8;
 
     /* =====================================================
-       BUILD MERGED ROWS (Hall + Subject)
+       BUILD ROWS (MERGED RANGES + INDIVIDUAL ROLLS)
     ===================================================== */
     const rowsMap = {};
     let totalStudents = 0;
 
-    seatingPlan.classrooms.forEach((room) => {
-      const hallName = room.hall?.hallName || room.hallName || "N/A";
+    Array.isArray(seatingPlan.classrooms) &&
+      seatingPlan.classrooms.forEach((room) => {
+        const hallName = room.hall?.hallName || "N/A";
 
-      room.allocations.forEach((alloc) => {
-        const key = `${hallName}__${alloc.subjectName}`;
+        Array.isArray(room.allocations) &&
+          room.allocations.forEach((alloc) => {
+            const subject = alloc.subjectName || "UNKNOWN";
+            const key = `${hallName}__${subject}`;
 
-        if (!rowsMap[key]) {
-          rowsMap[key] = {
-            hall: hallName,
-            subject: alloc.subjectName,
-            ranges: [],
-            count: 0,
-          };
-        }
+            if (!rowsMap[key]) {
+              rowsMap[key] = {
+                hall: hallName,
+                subject,
+                registers: [],
+                count: 0,
+              };
+            }
 
-        alloc.rollRanges.forEach((range) => {
-          const from = Number(range.from);
-          const to = Number(range.to);
+            /* ---- Roll ranges ---- */
+            Array.isArray(alloc.rollRanges) &&
+              alloc.rollRanges.forEach((r) => {
+                const from = Number(r?.from);
+                const to = Number(r?.to);
 
-          if (!isNaN(from) && !isNaN(to)) {
-            rowsMap[key].ranges.push(
-              from === to ? `${from}` : `${from} - ${to}`
-            );
-            rowsMap[key].count += to - from + 1;
-          }
-        });
+                if (!isNaN(from) && !isNaN(to)) {
+                  rowsMap[key].registers.push(
+                    from === to ? `${from}` : `${from} - ${to}`
+                  );
+                  rowsMap[key].count += to - from + 1;
+                }
+              });
+
+            /* ---- Individual rolls ---- */
+            Array.isArray(alloc.individualRolls) &&
+              alloc.individualRolls.forEach((roll) => {
+                const num = Number(roll);
+                if (!isNaN(num)) {
+                  rowsMap[key].registers.push(`${num}`);
+                  rowsMap[key].count += 1;
+                }
+              });
+          });
       });
-    });
 
-    /* ---------- TABLE BODY ---------- */
+    /* =====================================================
+       TABLE BODY
+    ===================================================== */
     let sno = 1;
 
     Object.values(rowsMap).forEach((row) => {
-      const registerText = row.ranges.join(", ");
-
       doc
         .fontSize(10)
-        .text(sno.toString(), col.sno, y)
+        .text(String(sno), col.sno, y)
         .text(row.hall, col.hall, y)
         .text(row.subject, col.subject, y)
-        .text(registerText, col.register, y, {
+        .text(row.registers.join(", "), col.register, y, {
           width: 160,
         })
-        .text(row.count.toString(), col.count, y, {
+        .text(String(row.count), col.count, y, {
           width: 50,
           align: "right",
         });
 
+      totalStudents += row.count;
       y += 18;
       sno++;
-      totalStudents += row.count;
 
-      /* Page break safety */
       if (y > 750) {
         doc.addPage();
         y = 50;
       }
     });
 
-    /* ---------- FOOTER ---------- */
+    /* =====================================================
+       FOOTER
+    ===================================================== */
     y += 5;
     doc.moveTo(40, y).lineTo(550, y).stroke();
     y += 10;
@@ -154,9 +215,18 @@ exports.exportSeatingPlanPDF = async (req, res) => {
 
     doc.end();
 
+    /* ---------- DEBUG (SAFE) ---------- */
+    console.log("PDF GENERATED:", {
+      seatingPlanId: id,
+      rows: Object.keys(rowsMap).length,
+      totalStudents,
+    });
+
   } catch (error) {
     console.error("PDF generation error:", error);
+
     res.status(500).json({
+      success: false,
       message: "PDF generation failed",
       error: error.message,
     });

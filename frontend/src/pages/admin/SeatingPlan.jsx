@@ -44,9 +44,7 @@ export default function SeatingPlan() {
     if (!selectedPlan) return;
 
     try {
-      await API.delete(
-        `/SeatingPlan/delete/${selectedPlan._id}`
-      );
+      await API.delete(`/SeatingPlan/delete/${selectedPlan._id}`);
       toast.success("Seating plan deleted successfully");
       closeDeleteModal();
       fetchPlans();
@@ -59,26 +57,51 @@ export default function SeatingPlan() {
   /* ---------------- Download PDF ---------------- */
   const downloadPDF = async (id, examName) => {
     try {
-      const res = await API.get(
-        `/SeatingPlan/exportpdf/${id}`,
-        { responseType: "blob" }
-      );
+      const res = await API.get(`/SeatingPlan/exportpdf/${id}`, {
+        responseType: "blob",
+        headers: {
+          Accept: "application/pdf",
+        },
+      });
 
-      const url = window.URL.createObjectURL(
-        new Blob([res.data], { type: "application/pdf" })
-      );
+      // Create blob from the response
+      const blob = new Blob([res.data], { type: "application/pdf" });
 
+      // Create a link element
+      const downloadUrl = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
-      link.href = url;
-      link.download = `${examName || "SeatingPlan"}.pdf`;
+
+      // Set the download attributes
+      link.href = downloadUrl;
+     link.download = "SeatingPlan.pdf";
+
+      link.style.display = "none";
+
+      // Add to the DOM, trigger download, and clean up
       document.body.appendChild(link);
       link.click();
-      link.remove();
+
+      // Cleanup
+      setTimeout(() => {
+        window.URL.revokeObjectURL(downloadUrl);
+        document.body.removeChild(link);
+      }, 100);
 
       toast.success("PDF downloaded successfully");
     } catch (err) {
-      toast.error("Failed to download PDF");
-      console.error(err);
+      console.error("PDF download error:", err);
+
+      if (err.response?.data instanceof Blob) {
+        const text = await err.response.data.text();
+        try {
+          const json = JSON.parse(text);
+          toast.error(json.message || "PDF generation failed");
+        } catch {
+          toast.error("PDF generation failed");
+        }
+      } else {
+        toast.error("Failed to download PDF");
+      }
     }
   };
 
