@@ -19,7 +19,7 @@ const app = express();
 const PORT = process.env.PORT;
 
 const allowedOrigins = [
-  "http://localhost:3000",                 // local dev      // prod frontend
+  "http://localhost:3000",                 // local dev      
   "https://examination-management-application.netlify.app"       // if you use Netlify
 ];
 app.use(

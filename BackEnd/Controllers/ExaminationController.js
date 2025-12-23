@@ -1,15 +1,9 @@
 const Examination = require("../Models/Examination");
 const Subject = require("../Models/Subject");
 
-// CREATE EXAMINATION
 const createExamination = async (req, res) => {
   try {
-    const {
-      examName,
-      date,
-      durationMinutes,
-      subjects
-    } = req.body;
+    const { examName, date, durationMinutes, subjects } = req.body;
 
     /* ---------- Basic validation ---------- */
     if (
@@ -22,29 +16,42 @@ const createExamination = async (req, res) => {
     ) {
       return res.status(400).json({
         message:
-          "Exam name, date, durationMinutes, and at least one subject are required"
+          "Exam name, date, durationMinutes, and at least one subject are required",
+      });
+    }
+
+    /* ---------- Prevent past-date exams ---------- */
+    const examDate = new Date(date);
+    if (isNaN(examDate.getTime())) {
+      return res.status(400).json({ message: "Invalid examination date" });
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (examDate < today) {
+      return res.status(400).json({
+        message: "Examination date cannot be in the past",
       });
     }
 
     /* ---------- Normalize subject names ---------- */
-    const requestedSubjectNames = subjects.map(s =>
-      s.subjectName?.trim().toUpperCase()
+    const requestedSubjectNames = subjects.map(
+      s => s.subjectName?.trim().toUpperCase()
     );
 
     if (requestedSubjectNames.includes(undefined)) {
       return res.status(400).json({
-        message: "Each subject must contain a valid subjectName"
+        message: "Each subject must contain a valid subjectName",
       });
     }
 
     /* ---------- Validate subjects against DB ---------- */
     const existingSubjects = await Subject.find({
-      name: { $in: requestedSubjectNames }
+      name: { $in: requestedSubjectNames },
     }).select("name");
 
-    const existingSubjectNames = existingSubjects.map(s =>
-      s.name.toUpperCase()
-    );
+    const existingSubjectNames = existingSubjects.map(s => s.name.toUpperCase());
 
     const invalidSubjects = requestedSubjectNames.filter(
       s => !existingSubjectNames.includes(s)
@@ -53,56 +60,81 @@ const createExamination = async (req, res) => {
     if (invalidSubjects.length > 0) {
       return res.status(400).json({
         message: "Invalid subject(s) provided",
-        invalidSubjects
+        invalidSubjects,
       });
     }
 
     /* ---------- Prevent duplicate exam on same date ---------- */
     const existingExam = await Examination.findOne({
       examName: examName.trim(),
-      date: new Date(date)
+      date: examDate,
     });
 
     if (existingExam) {
       return res.status(409).json({
-        message: "Examination already exists for this date"
+        message: "Examination already exists for this date",
       });
     }
 
-    /* ---------- Normalize subjects for storage ---------- */
-    const formattedSubjects = subjects.map(s => ({
-      subjectName: s.subjectName.trim().toUpperCase(),
-      rollRanges: Array.isArray(s.rollRanges)
-        ? s.rollRanges.map(r => ({
-            from: Number(r.from),
-            to: Number(r.to)
-          }))
-        : [],
-      individualRolls: Array.isArray(s.individualRolls)
-        ? s.individualRolls.map(Number)
-        : []
-    }));
+    /* ---------- Validate & normalize subjects ---------- */
+    const formattedSubjects = subjects.map((s, sIndex) => {
+      const rollRanges = Array.isArray(s.rollRanges) ? s.rollRanges : [];
+
+      rollRanges.forEach((r, rIndex) => {
+        const from = Number(r.from);
+        const to = Number(r.to);
+
+        if (
+          !Number.isInteger(from) ||
+          !Number.isInteger(to) ||
+          from <= 0 ||
+          to <= 0
+        ) {
+          throw new Error(
+            `Invalid roll range values for subject ${s.subjectName} at range index ${rIndex}`
+          );
+        }
+
+        if (from > to) {
+          throw new Error(
+            `Invalid roll range (from > to) for subject ${s.subjectName}: ${from} > ${to}`
+          );
+        }
+      });
+
+      return {
+        subjectName: s.subjectName.trim().toUpperCase(),
+        rollRanges: rollRanges.map(r => ({
+          from: Number(r.from),
+          to: Number(r.to),
+        })),
+        individualRolls: Array.isArray(s.individualRolls)
+          ? s.individualRolls.map(Number)
+          : [],
+      };
+    });
 
     /* ---------- Create examination ---------- */
     const exam = await Examination.create({
       examName: examName.trim(),
-      date: new Date(date),
+      date: examDate,
       durationMinutes,
-      subjects: formattedSubjects
+      subjects: formattedSubjects,
     });
 
     res.status(201).json({
       message: "Examination created successfully",
-      exam
+      exam,
     });
   } catch (error) {
     console.error("createExamination error:", error.message);
-    res.status(500).json({
+    res.status(400).json({
       message: "Failed to create examination",
-      error: error.message
+      error: error.message,
     });
   }
 };
+
 
 
 const getAllExaminations = async (req, res) => {

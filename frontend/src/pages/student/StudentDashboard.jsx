@@ -16,7 +16,11 @@ export default function StudentDashboard() {
     API.get("/examination/getall")
       .then((res) => setExams(res.data))
       .catch(() => toast.error("Unable to load exams"));
+      console.log(exams);
+      
   }, []);
+
+  
 
  const findSeat = async (examId) => {
    if (!rollNo || isNaN(Number(rollNo))) {
@@ -25,13 +29,19 @@ export default function StudentDashboard() {
    }
 
    const roll = Number(rollNo); // 👈 convert HERE
+   console.log(roll);
+   
 
    try {
      setLoading(true);
      setResult(null);
 
-     const res = await API.get(`/SeatingPlan/${examId}/roll/${roll}`);
-
+     const res = await API.get(
+       `http://localhost:8000/SeatingPlan/${examId}/roll/${roll}`
+       
+     );
+    console.log("recieved : ",res);
+    
      if (!res.data?.seatingDetails) {
        toast.info("Seat not allocated yet. Please check later.");
        return;
@@ -41,6 +51,7 @@ export default function StudentDashboard() {
      setShowModal(true);
    } catch {
      toast.info("Seat not allocated yet. Please check later.");
+     console.log("Error");
    } finally {
      setLoading(false);
    }

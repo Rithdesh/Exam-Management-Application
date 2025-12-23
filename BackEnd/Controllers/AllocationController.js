@@ -218,9 +218,10 @@ exports.getSeatingPlanByExam = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const seatingPlan = await SeatingPlan
-      .findOne({ examination: id })
-      .populate("classrooms.hall", "hallName capacity");
+   const seatingPlan = await SeatingPlan
+  .findOne({ examination: examId })
+  .populate("classrooms.hall", "hallName capacity");
+
 
     if (!seatingPlan) {
       return res.status(404).json({ message: "No seating plan found" });
@@ -253,9 +254,10 @@ exports.getSeatingByRollNumber = async (req, res) => {
       });
     }
 
-    /* ---------- examId is SeatingPlan _id ---------- */
+    /* ---------- FIND SEATING PLAN BY EXAM ID ---------- */
     const seatingPlan = await SeatingPlan
-      .findById(examId)
+      .findOne({ examination: examId })
+      .sort({ createdAt: -1 })
       .populate("classrooms.hall", "hallName capacity");
 
     console.log("🪑 seatingPlan found:", !!seatingPlan);
@@ -263,7 +265,7 @@ exports.getSeatingByRollNumber = async (req, res) => {
     if (!seatingPlan) {
       return res.status(404).json({
         success: false,
-        message: "No seating plan found for the specified examination",
+        message: "Seating plan not generated yet for this examination",
       });
     }
 
@@ -283,9 +285,10 @@ exports.getSeatingByRollNumber = async (req, res) => {
               seatingDetails: {
                 rollNumber: roll,
                 subject: allocation.subjectName,
-                hall: classroom.hallName,
+                hall: classroom.hallName,               // snapshot value
                 hallCapacity: classroom.capacityAtAllocation,
                 rollRange: { from, to },
+                examId: seatingPlan.examination,
               },
             });
           }
@@ -307,6 +310,7 @@ exports.getSeatingByRollNumber = async (req, res) => {
     });
   }
 };
+
 
 
 
